@@ -2,9 +2,7 @@ const CACHE_NAME = "stock-fesfcm-cache-v1";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
-  "./manifest.json",
-  "./192.png",
-  "./512.png"
+  "./manifest.json"
 ];
 
 self.addEventListener("install", event => {
@@ -19,4 +17,5 @@ self.addEventListener("fetch", event => {
   );
 
 });
+
 
