@@ -248,6 +248,9 @@ function stockFin(item) {
 
 /* --- AUTO-EXPORT CSV APRÈS MODIFICATION --- */
 function autoExportCSV() {
+
+    if (stock.length === 0) return;  // ⛔ Empêche la page blanche au premier lancement
+
     let csv = "Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum\n";
 
     stock.forEach(a => {
@@ -406,7 +409,7 @@ document.getElementById("btnSave").onclick = () => {
     resetForm();
 };
 
-/* --- ARTICLES À COMMANDER (PDF + message) --- */
+/* --- ARTICLES À COMMANDER --- */
 document.getElementById("btnOrder").onclick = () => {
     const articles = stock.filter(a => stockFin(a) < a.minimum);
 
@@ -433,7 +436,7 @@ document.getElementById("btnOrder").onclick = () => {
     alert(message);
 };
 
-/* --- PDF ARTICLES À COMMANDER (btnPDF d’origine) --- */
+/* --- PDF ARTICLES À COMMANDER --- */
 document.getElementById("btnPDF").onclick = () => {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF();
@@ -466,9 +469,7 @@ document.getElementById("btnPDF").onclick = () => {
             `Stock : ${stockFin(a)} | Min : ${a.minimum} | À commander : ${qte}`,
             20, y
         );
-        y += 10;
-    });
-
+        y += 10
     pdf.save("commande_fes_fcm.pdf");
 };
 
@@ -538,7 +539,7 @@ document.getElementById("btnExportPDF").onclick = () => {
         y += 6;
     });
 
-    pdf.save("stock_fes_fcm.pdf");
+    pdf.save("stock_fes_fcm_stock_complet.pdf");
 };
 
 /* --- IMPORT CSV / EXCEL --- */
@@ -564,6 +565,7 @@ function importerCSV(file) {
     reader.onload = function (e) {
         const lignes = e.target.result.split("\n").map(l => l.trim()).filter(l => l);
 
+        // On saute la première ligne (en-têtes)
         lignes.slice(1).forEach(ligne => {
             const cols = ligne.split(";");
 
