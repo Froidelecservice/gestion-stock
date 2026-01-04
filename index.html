@@ -1,164 +1,166 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Gestion de Stock FES/FCM</title>
+    <meta charset="UTF-8">
+    <title>Gestion de Stock FES/FCM</title>
 
-<!-- jsPDF pour export PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF pour export PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<!-- SheetJS pour Excel -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- SheetJS pour Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<script>
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-}
-</script>
-
-<style>
-    :root {
-        --bg: #f5f5f5;
-        --fg: #000000;
-        --card: #ffffff;
-        --header: #005A9C;
-        --header-text: #ffffff;
-        --alert: #ffcccc;
-        --btn-primary: #005A9C;
-        --btn-warning: #ff9800;
-        --btn-pdf: #673ab7;
-        --btn-save: #28a745;
-        --btn-delete: #d9534f;
-        --btn-entree: #4caf50;
-        --btn-sortie: #f44336;
-        --btn-modifier: #777777;
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("service-worker.js");
     }
+    </script>
 
-    body.dark {
-        --bg: #121212;
-        --fg: #f5f5f5;
-        --card: #1e1e1e;
-        --header: #1565c0;
-        --header-text: #ffffff;
-        --alert: #5c1f1f;
-    }
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --fg: #000000;
+            --card: #ffffff;
+            --header: #005A9C;
+            --header-text: #ffffff;
+            --alert: #ffcccc;
+            --btn-primary: #005A9C;
+            --btn-warning: #ff9800;
+            --btn-pdf: #673ab7;
+            --btn-save: #28a745;
+            --btn-delete: #d9534f;
+            --btn-entree: #4caf50;
+            --btn-sortie: #f44336;
+            --btn-modifier: #777777;
+        }
 
-    body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        background: var(--bg);
-        color: var(--fg);
-        transition: background 0.3s, color 0.3s;
-    }
+        body.dark {
+            --bg: #121212;
+            --fg: #f5f5f5;
+            --card: #1e1e1e;
+            --header: #1565c0;
+            --header-text: #ffffff;
+            --alert: #5c1f1f;
+        }
 
-    h2 { margin-bottom: 10px; font-size: 26px; }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: var(--bg);
+            color: var(--fg);
+            transition: background 0.3s, color 0.3s;
+        }
 
-    .top-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        margin-bottom: 15px;
-    }
+        h2 { margin-bottom: 10px; font-size: 26px; }
 
-    .btn {
-        padding: 14px 24px;
-        font-size: 18px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        color: #ffffff;
-    }
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
 
-    #btnAdd { background: var(--btn-primary); }
-    #btnOrder { background: var(--btn-warning); }
-    #btnPDF { background: var(--btn-pdf); }
-    #btnExportCSV { background: #3f51b5; }
-    #btnReset { background: var(--btn-delete); }
-    #btnFullscreen { background: #009688; }
-    #btnImport { background: #6a1b9a; }
-    #btnDownloadModel { background: #0277bd; }
+        .btn {
+            padding: 14px 24px;
+            font-size: 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            color: #ffffff;
+        }
 
-    form {
-        background: var(--card);
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        display: none;
-    }
+        #btnAdd { background: var(--btn-primary); }
+        #btnOrder { background: var(--btn-warning); }
+        #btnPDF { background: var(--btn-pdf); }
+        #btnExportCSV { background: #3f51b5; }
+        #btnExportExcel { background: #009688; }
+        #btnExportPDF { background: #795548; }
+        #btnReset { background: var(--btn-delete); }
+        #btnFullscreen { background: #009688; }
+        #btnImport { background: #6a1b9a; }
+        #btnDownloadModel { background: #0277bd; }
 
-    .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        form {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
 
-    .field { flex: 1; display: flex; flex-direction: column; min-width: 150px; }
+        .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 
-    label { font-size: 14px; margin-bottom: 3px; }
+        .field { flex: 1; display: flex; flex-direction: column; min-width: 150px; }
 
-    input {
-        padding: 10px;
-        font-size: 16px;
-        border-radius: 4px;
-        border: 1px solid #999;
-        box-sizing: border-box;
-    }
+        label { font-size: 14px; margin-bottom: 3px; }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        background: var(--card);
-        font-size: 15px;
-    }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #999;
+            box-sizing: border-box;
+        }
 
-    th, td {
-        border: 1px solid #ccc;
-        padding: 8px;
-        text-align: center;
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            font-size: 15px;
+        }
 
-    th {
-        background: var(--header);
-        color: var(--header-text);
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
 
-    .alert { background: var(--alert); }
+        th {
+            background: var(--header);
+            color: var(--header-text);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
 
-    .btn-small {
-        padding: 12px 18px;
-        font-size: 18px;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-        color: #ffffff;
-        margin: 2px 0;
-        width: 100%;
-    }
+        .alert { background: var(--alert); }
 
-    .btn-entree { background: var(--btn-entree); }
-    .btn-sortie { background: var(--btn-sortie); }
-    .btn-delete { background: var(--btn-delete); }
-    .btn-modifier { background: var(--btn-modifier); }
+        .btn-small {
+            padding: 12px 18px;
+            font-size: 18px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            color: #ffffff;
+            margin: 2px 0;
+            width: 100%;
+        }
 
-    #btnSave {
-        background: var(--btn-save);
-        color: #ffffff;
-        border: none;
-        margin-top: 10px;
-    }
+        .btn-entree { background: var(--btn-entree); }
+        .btn-sortie { background: var(--btn-sortie); }
+        .btn-delete { background: var(--btn-delete); }
+        .btn-modifier { background: var(--btn-modifier); }
 
-    .search-bar {
-        margin-bottom: 10px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
+        #btnSave {
+            background: var(--btn-save);
+            color: #ffffff;
+            border: none;
+            margin-top: 10px;
+        }
 
-    .search-bar input { flex: 1; }
-</style>
+        .search-bar {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input { flex: 1; }
+    </style>
 </head>
 
 <body>
@@ -168,8 +170,10 @@ if ("serviceWorker" in navigator) {
 <div class="top-bar">
     <button id="btnAdd" class="btn">➕ Ajouter</button>
     <button id="btnOrder" class="btn">📦 À commander</button>
-    <button id="btnPDF" class="btn">📝 PDF</button>
+    <button id="btnPDF" class="btn">📝 PDF commande</button>
     <button id="btnExportCSV" class="btn">📄 Export CSV</button>
+    <button id="btnExportExcel" class="btn">📊 Export Excel</button>
+    <button id="btnExportPDF" class="btn">📄 Export PDF stock</button>
     <button id="btnImport" class="btn">📥 Importer</button>
     <button id="btnDownloadModel" class="btn">⬇️ Modèle CSV</button>
     <button id="btnReset" class="btn">🗑️ Reset</button>
@@ -182,7 +186,6 @@ if ("serviceWorker" in navigator) {
     <label>🔍 Recherche :</label>
     <input type="text" id="search" placeholder="Référence, fournisseur, machine...">
 </div>
-
 <form id="formStock">
     <h3 id="formTitle">Nouvel article</h3>
 
@@ -230,7 +233,6 @@ if ("serviceWorker" in navigator) {
     </thead>
     <tbody></tbody>
 </table>
-
 <script>
 /* --- STOCK --- */
 let stock = JSON.parse(localStorage.getItem("stockData") || "[]");
@@ -242,6 +244,23 @@ function sauvegarder() {
 
 function stockFin(item) {
     return item.debut + item.entrees - item.sorties;
+}
+
+/* --- AUTO-EXPORT CSV APRÈS MODIFICATION --- */
+function autoExportCSV() {
+    let csv = "Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum\n";
+
+    stock.forEach(a => {
+        csv += `${a.fournisseur};${a.machine};${a.marque};${a.materiel};${a.reference};${a.denomination};${a.debut};${a.entrees};${a.sorties};${stockFin(a)};${a.minimum}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stock_fes_fcm_mis_a_jour.csv";
+    a.click();
 }
 
 /* --- MODE SOMBRE AUTO --- */
@@ -319,6 +338,7 @@ function supprimer(index) {
     if (!confirm("Supprimer cet article ?")) return;
     stock.splice(index, 1);
     sauvegarder();
+    autoExportCSV();
     afficher();
 }
 
@@ -328,6 +348,7 @@ function ajouterEntree(index) {
     if (q > 0) {
         stock[index].entrees += q;
         sauvegarder();
+        autoExportCSV();
         afficher();
     }
 }
@@ -337,6 +358,7 @@ function ajouterSortie(index) {
     if (q > 0) {
         stock[index].sorties += q;
         sauvegarder();
+        autoExportCSV();
         afficher();
     }
 }
@@ -357,7 +379,7 @@ document.getElementById("btnAdd").onclick = () => {
     document.getElementById("formStock").style.display = "block";
 };
 
-/* --- SAUVEGARDE --- */
+/* --- SAUVEGARDE (AJOUT / MODIF) --- */
 document.getElementById("btnSave").onclick = () => {
     const f = document.getElementById("formStock");
     const data = Object.fromEntries(new FormData(f).entries());
@@ -379,11 +401,12 @@ document.getElementById("btnSave").onclick = () => {
     else stock[indexEnEdition] = item;
 
     sauvegarder();
+    autoExportCSV();
     afficher();
     resetForm();
 };
 
-/* --- ARTICLES À COMMANDER --- */
+/* --- ARTICLES À COMMANDER (PDF + message) --- */
 document.getElementById("btnOrder").onclick = () => {
     const articles = stock.filter(a => stockFin(a) < a.minimum);
 
@@ -410,7 +433,7 @@ document.getElementById("btnOrder").onclick = () => {
     alert(message);
 };
 
-/* --- PDF --- */
+/* --- PDF ARTICLES À COMMANDER (btnPDF d’origine) --- */
 document.getElementById("btnPDF").onclick = () => {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF();
@@ -449,7 +472,7 @@ document.getElementById("btnPDF").onclick = () => {
     pdf.save("commande_fes_fcm.pdf");
 };
 
-/* --- EXPORT CSV --- */
+/* --- EXPORT CSV MANUEL (bouton existant) --- */
 document.getElementById("btnExportCSV").onclick = () => {
     let csv = "Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum\n";
 
@@ -464,6 +487,58 @@ document.getElementById("btnExportCSV").onclick = () => {
     a.href = url;
     a.download = "stock_fes_fcm.csv";
     a.click();
+};
+
+/* --- EXPORT EXCEL (NOUVEAU BOUTON) --- */
+document.getElementById("btnExportExcel").onclick = () => {
+    const ws = XLSX.utils.json_to_sheet(
+        stock.map(a => ({
+            Fournisseur: a.fournisseur,
+            Machine: a.machine,
+            Marque: a.marque,
+            Materiel: a.materiel,
+            Reference: a.reference,
+            Denomination: a.denomination,
+            Debut: a.debut,
+            Entrees: a.entrees,
+            Sorties: a.sorties,
+            StockFin: stockFin(a),
+            Minimum: a.minimum
+        }))
+    );
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stock");
+
+    XLSX.writeFile(wb, "stock_fes_fcm.xlsx");
+};
+
+/* --- EXPORT PDF STOCK COMPLET (NOUVEAU BOUTON) --- */
+document.getElementById("btnExportPDF").onclick = () => {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    pdf.setFontSize(16);
+    pdf.text("Stock FES/FCM — Export complet", 20, 20);
+
+    let y = 35;
+    pdf.setFontSize(10);
+
+    stock.forEach(a => {
+        if (y > 270) {
+            pdf.addPage();
+            y = 20;
+        }
+
+        pdf.text(
+            `${a.reference} | ${a.denomination} | Stock: ${stockFin(a)} | Min: ${a.minimum}`,
+            20,
+            y
+        );
+        y += 6;
+    });
+
+    pdf.save("stock_fes_fcm.pdf");
 };
 
 /* --- IMPORT CSV / EXCEL --- */
@@ -509,6 +584,7 @@ function importerCSV(file) {
         });
 
         sauvegarder();
+        autoExportCSV();
         afficher();
         alert("Import CSV terminé !");
     };
@@ -539,6 +615,7 @@ function importerExcel(file) {
         });
 
         sauvegarder();
+        autoExportCSV();
         afficher();
         alert("Import Excel terminé !");
     };
@@ -562,6 +639,7 @@ document.getElementById("btnReset").onclick = () => {
     if (confirm("Effacer toute la base ?")) {
         stock = [];
         sauvegarder();
+        autoExportCSV();
         afficher();
     }
 };
