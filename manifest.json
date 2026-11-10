@@ -3,7 +3,7 @@
   "short_name": "Stock FES/FCM",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#f5f5f5",
+  "background_color": "#ffffff",
   "theme_color": "#005A9C",
   "icons": [
     {
