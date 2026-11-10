@@ -1,669 +1,2339 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Gestion de Stock FES/FCM</title>
 
-    <!-- jsPDF pour export PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<meta charset="UTF-8">
 
-    <!-- SheetJS pour Excel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <script>
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("service-worker.js");
-    }
-    </script>
+<title>
+Gestion de Stock Véhicule FES / FCM
+</title>
 
-    <style>
-        :root {
-            --bg: #f5f5f5;
-            --fg: #000000;
-            --card: #ffffff;
-            --header: #005A9C;
-            --header-text: #ffffff;
-            --alert: #ffcccc;
-            --btn-primary: #005A9C;
-            --btn-warning: #ff9800;
-            --btn-pdf: #673ab7;
-            --btn-save: #28a745;
-            --btn-delete: #d9534f;
-            --btn-entree: #4caf50;
-            --btn-sortie: #f44336;
-            --btn-modifier: #777777;
+<link
+rel="manifest"
+href="manifest.json">
+
+<script>
+
+if ("serviceWorker" in navigator) {
+
+    window.addEventListener(
+        "load",
+        () => {
+
+            navigator.serviceWorker.register(
+                "service-worker.js"
+            );
+
         }
+    );
 
-        body.dark {
-            --bg: #121212;
-            --fg: #f5f5f5;
-            --card: #1e1e1e;
-            --header: #1565c0;
-            --header-text: #ffffff;
-            --alert: #5c1f1f;
-        }
+}
 
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background: var(--bg);
-            color: var(--fg);
-            transition: background 0.3s, color 0.3s;
-        }
+</script>
 
-        h2 { margin-bottom: 10px; font-size: 26px; }
+<style>
 
-        .top-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
+:root{
 
-        .btn {
-            padding: 14px 24px;
-            font-size: 18px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            color: #ffffff;
-        }
+    --bg:#f5f5f5;
+    --fg:#000;
 
-        #btnAdd { background: var(--btn-primary); }
-        #btnOrder { background: var(--btn-warning); }
-        #btnPDF { background: var(--btn-pdf); }
-        #btnExportCSV { background: #3f51b5; }
-        #btnExportExcel { background: #009688; }
-        #btnExportPDF { background: #795548; }
-        #btnReset { background: var(--btn-delete); }
-        #btnFullscreen { background: #009688; }
-        #btnImport { background: #6a1b9a; }
-        #btnDownloadModel { background: #0277bd; }
+    --card:#ffffff;
 
-        form {
-            background: var(--card);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
+    --header:#005A9C;
+    --header-text:#ffffff;
 
-        .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    --alert:#ffcccc;
 
-        .field { flex: 1; display: flex; flex-direction: column; min-width: 150px; }
+    --btn-primary:#005A9C;
+    --btn-warning:#ff9800;
+    --btn-pdf:#673ab7;
+    --btn-save:#28a745;
+    --btn-delete:#d9534f;
+    --btn-entree:#4caf50;
+    --btn-sortie:#f44336;
+    --btn-modifier:#777777;
 
-        label { font-size: 14px; margin-bottom: 3px; }
+    --btn-backup:#2e7d32;
+    --btn-restore:#ef6c00;
 
-        input {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 4px;
-            border: 1px solid #999;
-            box-sizing: border-box;
-        }
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--card);
-            font-size: 15px;
-        }
+body.dark{
 
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: center;
-        }
+    --bg:#121212;
 
-        th {
-            background: var(--header);
-            color: var(--header-text);
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
+    --fg:#f5f5f5;
 
-        .alert { background: var(--alert); }
+    --card:#1e1e1e;
 
-        .btn-small {
-            padding: 12px 18px;
-            font-size: 18px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            color: #ffffff;
-            margin: 2px 0;
-            width: 100%;
-        }
+    --header:#1565c0;
 
-        .btn-entree { background: var(--btn-entree); }
-        .btn-sortie { background: var(--btn-sortie); }
-        .btn-delete { background: var(--btn-delete); }
-        .btn-modifier { background: var(--btn-modifier); }
+    --header-text:#ffffff;
 
-        #btnSave {
-            background: var(--btn-save);
-            color: #ffffff;
-            border: none;
-            margin-top: 10px;
-        }
+    --alert:#5c1f1f;
+}
 
-        .search-bar {
-            margin-bottom: 10px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+body{
 
-        .search-bar input { flex: 1; }
-    </style>
+    font-family:Arial,sans-serif;
+
+    padding:20px;
+
+    background:var(--bg);
+
+    color:var(--fg);
+
+    transition:
+    background .3s,
+    color .3s;
+
+}
+
+h2{
+
+    margin-bottom:10px;
+
+    font-size:26px;
+}
+
+.top-bar{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
+    align-items:center;
+
+    margin-bottom:15px;
+}
+
+.btn{
+
+    padding:14px 24px;
+
+    font-size:18px;
+
+    border:none;
+
+    border-radius:8px;
+
+    color:white;
+
+    cursor:pointer;
+
+}
+
+#btnAdd{
+    background:var(--btn-primary);
+}
+
+#btnOrder{
+    background:var(--btn-warning);
+}
+
+#btnPDF{
+    background:var(--btn-pdf);
+}
+
+#btnExportCSV{
+    background:#3f51b5;
+}
+#btnExportCSVPositif{
+    background:#2f51b5;
+}
+
+#btnExportExcel{
+    background:#4f51b5;
+}
+#btnExportExcelPositif{
+    background:#2f51b5;
+}
+
+#btnImport{
+    background:#6a1b9a;
+}
+
+#btnDownloadModel{
+    background:#0277bd;
+}
+
+#btnBackup{
+    background:var(--btn-backup);
+}
+
+#btnRestore{
+    background:var(--btn-restore);
+}
+
+#btnReset{
+    background:var(--btn-delete);
+}
+
+#btnFullscreen{
+    background:#009688;
+}
+
+form{
+
+    background:var(--card);
+
+    padding:15px;
+
+    border-radius:8px;
+
+    margin-bottom:20px;
+
+    display:none;
+}
+
+.row{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
+    margin-bottom:10px;
+}
+
+.field{
+
+    flex:1;
+
+    min-width:180px;
+
+    display:flex;
+
+    flex-direction:column;
+}
+
+label{
+
+    font-size:14px;
+
+    margin-bottom:5px;
+}
+
+input{
+
+    padding:10px;
+
+    font-size:16px;
+
+    border-radius:4px;
+
+    border:1px solid #999;
+
+    box-sizing:border-box;
+}
+
+.search-bar{
+
+    display:flex;
+
+    gap:10px;
+
+    flex-wrap:wrap;
+
+    align-items:center;
+
+    margin-bottom:10px;
+}
+
+.search-bar input{
+
+    flex:1;
+}
+
+/*************************************************/
+/* CORRECTION DU TABLEAU */
+/*************************************************/
+
+.table-container{
+
+    width:100%;
+
+    overflow-x:auto;
+
+    overflow-y:auto;
+}
+
+table{
+
+    width:100%;
+
+    min-width:1800px;
+
+    border-collapse:collapse;
+
+    background:var(--card);
+
+    table-layout:auto;
+}
+
+th,
+td{
+
+    border:1px solid #cccccc;
+
+    padding:8px;
+
+    text-align:center;
+
+    min-width:100px;
+
+    white-space:normal;
+
+    word-break:break-word;
+}
+
+th{
+
+    position:sticky;
+
+    top:0;
+
+    z-index:1;
+
+    background:var(--header);
+
+    color:var(--header-text);
+}
+
+.alert{
+
+    background:var(--alert);
+}
+
+.btn-small{
+
+    width:100%;
+
+    padding:12px;
+
+    font-size:16px;
+
+    color:white;
+
+    border:none;
+
+    border-radius:6px;
+
+    cursor:pointer;
+}
+
+.btn-entree{
+
+    background:var(--btn-entree);
+}
+
+.btn-sortie{
+
+    background:var(--btn-sortie);
+}
+
+.btn-delete{
+
+    background:var(--btn-delete);
+}
+
+.btn-modifier{
+
+    background:var(--btn-modifier);
+}
+
+#btnSave{
+
+    margin-top:10px;
+
+    padding:12px 20px;
+
+    background:var(--btn-save);
+
+    color:white;
+
+    border:none;
+
+    border-radius:6px;
+
+    cursor:pointer;
+
+}
+
+footer{
+
+    margin-top:20px;
+
+    text-align:center;
+
+    opacity:.8;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h2>Gestion de Stock — FES/FCM</h2>
+<h2>
+Gestion de Stock Véhicule - FES / FCM
+</h2>
+
 
 <div class="top-bar">
-    <button id="btnAdd" class="btn">➕ Ajouter</button>
-    <button id="btnOrder" class="btn">📦 À commander</button>
-    <button id="btnPDF" class="btn">📝 PDF commande</button>
-    <button id="btnExportCSV" class="btn">📄 Export CSV</button>
-    <button id="btnExportExcel" class="btn">📊 Export Excel</button>
-    <button id="btnExportPDF" class="btn">📄 Export PDF stock</button>
-    <button id="btnImport" class="btn">📥 Importer</button>
-    <button id="btnDownloadModel" class="btn">⬇️ Modèle CSV</button>
-    <button id="btnReset" class="btn">🗑️ Reset</button>
-    <button id="btnFullscreen" class="btn">⛶ Plein écran</button>
+
+    <button id="btnAdd" class="btn">
+        ➕ Ajouter
+    </button>
+
+    <button id="btnOrder" class="btn">
+        📦 À commander
+    </button>
+
+    <button id="btnPDF" class="btn">
+        📝 PDF
+    </button>
+
+    <button id="btnExportCSV" class="btn">
+        📄 Export CSV
+    </button>
+
+    <button id="btnExportCSVPositif" class="btn">
+        📄 CSV Stock +
+    </button>
+
+    <button id="btnExportExcel" class="btn">
+        📊 Export Excel
+    </button>
+
+    <button id="btnExportExcelPositif" class="btn">
+        📊 Excel Stock +
+    </button>
+
+    <button id="btnImport" class="btn">
+        📥 Importer
+    </button>
+
+    <button id="btnDownloadModel" class="btn">
+        ⬇️ Modèle CSV
+    </button>
+
+    <button id="btnBackup" class="btn">
+        💾 Sauvegarde
+    </button>
+
+    <button id="btnRestore" class="btn">
+        ♻ Restaurer
+    </button>
+
+    <button id="btnReset" class="btn">
+        🗑️ Reset
+    </button>
+
+    <button id="btnFullscreen" class="btn">
+        ⛶ Plein écran
+    </button>
+
 </div>
 
-<input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none;">
+<!-- IMPORT CSV / EXCEL -->
+
+<input
+type="file"
+id="fileInput"
+accept=".csv,.xlsx,.xls"
+style="display:none;">
+
+<!-- RESTAURATION JSON -->
+
+<input
+type="file"
+id="jsonBackup"
+accept=".json"
+style="display:none;">
 
 <div class="search-bar">
-    <label>🔍 Recherche :</label>
-    <input type="text" id="search" placeholder="Référence, fournisseur, machine...">
+
+    <label>
+        🔍 Recherche :
+    </label>
+
+    <input
+    type="text"
+    id="search"
+    placeholder="Référence codial, fournisseur, machine...">
+
 </div>
+
 <form id="formStock">
-    <h3 id="formTitle">Nouvel article</h3>
+
+    <h3 id="formTitle">
+        Nouvel article
+    </h3>
 
     <div class="row">
-        <div class="field"><label>Fournisseur</label><input name="fournisseur"></div>
-        <div class="field"><label>Machine</label><input name="machine"></div>
-        <div class="field"><label>Marque</label><input name="marque"></div>
+
+        <div class="field">
+            <label>Référence Codial</label>
+            <input
+            type="text"
+            name="codial">
+        </div>
+
+        <div class="field">
+            <label>Fournisseur</label>
+            <input
+            type="text"
+            name="fournisseur">
+        </div>
+
+        <div class="field">
+            <label>Machine</label>
+            <input
+            type="text"
+            name="machine">
+        </div>
+
+        <div class="field">
+            <label>Marque</label>
+            <input
+            type="text"
+            name="marque">
+        </div>
+
     </div>
 
     <div class="row">
-        <div class="field"><label>Matériel</label><input name="materiel"></div>
-        <div class="field"><label>Référence</label><input name="reference"></div>
-        <div class="field"><label>Dénomination</label><input name="denomination"></div>
+
+        <div class="field">
+            <label>Matériel</label>
+            <input
+            type="text"
+            name="materiel">
+        </div>
+
+        <div class="field">
+            <label>Référence</label>
+            <input
+            type="text"
+            name="reference">
+        </div>
+
+        <div class="field">
+            <label>Dénomination</label>
+            <input
+            type="text"
+            name="denomination">
+        </div>
+
     </div>
 
     <div class="row">
-        <div class="field"><label>Stock début mois</label><input type="number" name="debut" value="0"></div>
-        <div class="field"><label>Entrées</label><input type="number" name="entrees" value="0"></div>
-        <div class="field"><label>Sorties</label><input type="number" name="sorties" value="0"></div>
-        <div class="field"><label>Stock minimum</label><input type="number" name="minimum" value="0"></div>
+
+        <div class="field">
+            <label>Stock début mois</label>
+            <input
+            type="number"
+            name="debut"
+            value="0">
+        </div>
+
+        <div class="field">
+            <label>Entrées</label>
+            <input
+            type="number"
+            name="entrees"
+            value="0">
+        </div>
+
+        <div class="field">
+            <label>Sorties</label>
+            <input
+            type="number"
+            name="sorties"
+            value="0">
+        </div>
+
+        <div class="field">
+            <label>Stock minimum</label>
+            <input
+            type="number"
+            name="minimum"
+            value="0">
+        </div>
+
     </div>
 
-    <button type="button" id="btnSave">💾 Enregistrer</button>
+    <button
+    type="button"
+    id="btnSave">
+
+    💾 Enregistrer
+
+    </button>
+
 </form>
 
+<div class="table-container">
+
 <table id="tableStock">
-    <thead>
-    <tr>
-        <th>FOURNISSEUR</th>
-        <th>MACHINE</th>
-        <th>MARQUE</th>
-        <th>MATERIEL</th>
-        <th>REFERENCE</th>
-        <th>DENOMINATION</th>
-        <th>DEBUT</th>
-        <th>ENTREES</th>
-        <th>SORTIES</th>
-        <th>STOCK FIN</th>
-        <th>MIN</th>
-        <th>ENTRÉE</th>
-        <th>SORTIE</th>
-        <th>MODIFIER</th>
-        <th>SUPPRIMER</th>
-    </tr>
-    </thead>
-    <tbody></tbody>
+
+<thead>
+
+<tr>
+
+    <th>CODIAL</th>
+
+    <th>FOURNISSEUR</th>
+
+    <th>MACHINE</th>
+
+    <th>MARQUE</th>
+
+    <th>MATÉRIEL</th>
+
+    <th>RÉFÉRENCE</th>
+
+    <th>DÉNOMINATION</th>
+
+    <th>DÉBUT</th>
+
+    <th>ENTRÉES</th>
+
+    <th>SORTIES</th>
+
+    <th>STOCK FIN</th>
+
+    <th>MIN</th>
+
+    <th>ENTRÉE</th>
+
+    <th>SORTIE</th>
+
+    <th>MODIFIER</th>
+
+    <th>SUPPRIMER</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+</tbody>
+
 </table>
+
+</div>
+
 <script>
-/* --- STOCK --- */
-let stock = JSON.parse(localStorage.getItem("stockData") || "[]");
+
+/* ===================================
+   VARIABLES GLOBALES
+=================================== */
+
+let stock =
+JSON.parse(
+    localStorage.getItem(
+        "stockData"
+    ) || "[]"
+);
+
+/* ===============================
+   RESTAURATION DE SECOURS
+=============================== */
+
+if(stock.length === 0){
+
+    const backup =
+    localStorage.getItem(
+        "stockDataBackup"
+    );
+
+    if(backup){
+
+        try{
+
+            stock =
+            JSON.parse(
+                backup
+            ).data || [];
+
+        }
+        catch(e){
+
+            console.log(
+                "Backup invalide"
+            );
+
+        }
+
+    }
+
+}
+
 let indexEnEdition = null;
 
-function sauvegarder() {
-    localStorage.setItem("stockData", JSON.stringify(stock));
+/* ===============================
+   INDEX RECHERCHE
+=============================== */
+
+function creerIndexRecherche(item){
+
+    item._search =
+
+    (
+        (item.codial || "") + " " +
+        (item.fournisseur || "") + " " +
+        (item.machine || "") + " " +
+        (item.marque || "") + " " +
+        (item.materiel || "") + " " +
+        (item.reference || "") + " " +
+        (item.denomination || "")
+    )
+
+    .toLowerCase();
+
+    return item;
 }
 
-function stockFin(item) {
-    return item.debut + item.entrees - item.sorties;
-}
+stock =
+stock.map(
+    creerIndexRecherche
+);
 
-/* --- AUTO-EXPORT CSV APRÈS MODIFICATION --- */
-function autoExportCSV() {
+/* ===================================
+   SAUVEGARDE
+=================================== */
 
-    if (stock.length === 0) return;  // ⛔ Empêche la page blanche au premier lancement
+function sauvegarder(){
 
-    let csv = "Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum\n";
-
-    stock.forEach(a => {
-        csv += `${a.fournisseur};${a.machine};${a.marque};${a.materiel};${a.reference};${a.denomination};${a.debut};${a.entrees};${a.sorties};${stockFin(a)};${a.minimum}\n`;
-    });
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "stock_fes_fcm_mis_a_jour.csv";
-    a.click();
-}
-
-/* --- MODE SOMBRE AUTO --- */
-function appliqueModeSombreAuto() {
-    const h = new Date().getHours();
-    if (h >= 18 || h < 7) document.body.classList.add("dark");
-    else document.body.classList.remove("dark");
-}
-
-/* --- FILTRE --- */
-function filtrerStock(txt) {
-    txt = txt.toLowerCase();
-    return stock.filter(item =>
-        Object.values(item).join(" ").toLowerCase().includes(txt)
+    localStorage.setItem(
+        "stockData",
+        JSON.stringify(stock)
     );
+
+    localStorage.setItem(
+        "stockDataBackup",
+        JSON.stringify({
+            date:
+            new Date().toISOString(),
+            data:
+            stock
+        })
+    );
+
 }
 
-/* --- AFFICHAGE --- */
-function afficher() {
-    const tbody = document.querySelector("#tableStock tbody");
-    tbody.innerHTML = "";
+/* ===================================
+   EXPORT JSON
+=================================== */
 
-    const filtre = document.getElementById("search").value || "";
-    const liste = filtrerStock(filtre);
+function sauvegardeFichier(){
 
-    liste.forEach(item => {
-        const index = stock.indexOf(item);
-        const fin = stockFin(item);
-        const alertClass = fin < item.minimum ? "alert" : "";
+    const contenu = {
 
-        tbody.innerHTML += `
-        <tr class="${alertClass}">
-            <td>${item.fournisseur}</td>
-            <td>${item.machine}</td>
-            <td>${item.marque}</td>
-            <td>${item.materiel}</td>
-            <td>${item.reference}</td>
-            <td>${item.denomination}</td>
-            <td>${item.debut}</td>
-            <td>${item.entrees}</td>
-            <td>${item.sorties}</td>
-            <td>${fin}</td>
-            <td>${item.minimum}</td>
-            <td><button class="btn-small btn-entree" onclick="ajouterEntree(${index})">Entrée +</button></td>
-            <td><button class="btn-small btn-sortie" onclick="ajouterSortie(${index})">Sortie −</button></td>
-            <td><button class="btn-small btn-modifier" onclick="modifierArticle(${index})">Modifier</button></td>
-            <td><button class="btn-small btn-delete" onclick="supprimer(${index})">❌</button></td>
-        </tr>`;
-    });
-}
+        application:
+        "Gestion Stock FES FCM",
 
-/* --- FORMULAIRE --- */
-function resetForm() {
-    document.getElementById("formStock").reset();
-    document.getElementById("formStock").style.display = "none";
-    indexEnEdition = null;
-}
+        date:
+        new Date()
+        .toLocaleString(),
 
-function remplirForm(item) {
-    const f = document.getElementById("formStock");
-    f.fournisseur.value = item.fournisseur;
-    f.machine.value = item.machine;
-    f.marque.value = item.marque;
-    f.materiel.value = item.materiel;
-    f.reference.value = item.reference;
-    f.denomination.value = item.denomination;
-    f.debut.value = item.debut;
-    f.entrees.value = item.entrees;
-    f.sorties.value = item.sorties;
-    f.minimum.value = item.minimum;
-}
+        nombreArticles:
+        stock.length,
 
-/* --- SUPPRESSION --- */
-function supprimer(index) {
-    if (!confirm("Supprimer cet article ?")) return;
-    stock.splice(index, 1);
-    sauvegarder();
-    autoExportCSV();
-    afficher();
-}
+        stock:
+        stock
 
-/* --- ENTREE / SORTIE --- */
-function ajouterEntree(index) {
-    const q = Number(prompt("Quantité entrée :"));
-    if (q > 0) {
-        stock[index].entrees += q;
-        sauvegarder();
-        autoExportCSV();
-        afficher();
-    }
-}
-
-function ajouterSortie(index) {
-    const q = Number(prompt("Quantité sortie :"));
-    if (q > 0) {
-        stock[index].sorties += q;
-        sauvegarder();
-        autoExportCSV();
-        afficher();
-    }
-}
-
-/* --- MODIFIER --- */
-function modifierArticle(index) {
-    indexEnEdition = index;
-    remplirForm(stock[index]);
-    document.getElementById("formStock").style.display = "block";
-    document.getElementById("formTitle").textContent = "Modifier l’article";
-}
-
-/* --- AJOUT --- */
-document.getElementById("btnAdd").onclick = () => {
-    indexEnEdition = null;
-    document.getElementById("formTitle").textContent = "Nouvel article";
-    document.getElementById("formStock").reset();
-    document.getElementById("formStock").style.display = "block";
-};
-
-/* --- SAUVEGARDE (AJOUT / MODIF) --- */
-document.getElementById("btnSave").onclick = () => {
-    const f = document.getElementById("formStock");
-    const data = Object.fromEntries(new FormData(f).entries());
-
-    const item = {
-        fournisseur: data.fournisseur,
-        machine: data.machine,
-        marque: data.marque,
-        materiel: data.materiel,
-        reference: data.reference,
-        denomination: data.denomination,
-        debut: Number(data.debut),
-        entrees: Number(data.entrees),
-        sorties: Number(data.sorties),
-        minimum: Number(data.minimum)
     };
 
-    if (indexEnEdition === null) stock.push(item);
-    else stock[indexEnEdition] = item;
+    const blob =
+    new Blob(
+        [
+            JSON.stringify(
+                contenu,
+                null,
+                2
+            )
+        ],
+        {
+            type:
+            "application/json"
+        }
+    );
+
+    const lien =
+    document.createElement("a");
+
+    lien.href =
+    URL.createObjectURL(blob);
+
+    lien.download =
+    "Stock_FES_FCM_" +
+    new Date()
+    .toISOString()
+    .slice(0,19)
+    .replace(/:/g,"-")
+    + ".json";
+
+    lien.click();
+}
+
+/* ===================================
+   STOCK
+=================================== */
+
+function stockFin(item){
+    return (
+        Number(item.debut || 0) +
+        Number(item.entrees || 0) -
+        Number(item.sorties || 0)
+    );
+}
+/* ===================================
+   MODE SOMBRE
+=================================== */
+
+function appliqueModeSombreAuto(){
+
+    const heure =
+    new Date().getHours();
+
+    if(
+        heure >= 18 ||
+        heure < 7
+    ) {
+
+        document.body.classList.add(
+            "dark"
+        );
+
+    }
+    else{
+
+        document.body.classList.remove(
+            "dark"
+        );
+
+    }
+
+}
+
+/* ===================================
+   FILTRE
+=================================== */
+
+function filtrerStock(texte){
+
+    texte =
+    texte.toLowerCase();
+
+    if(!texte){
+
+        return stock;
+    }
+
+    return stock.filter(
+        item =>
+        (item._search || "").includes(texte)  
+  );
+
+}
+
+/* ===================================
+   AFFICHAGE CORRIGÉ
+=================================== */
+
+function afficher(){
+
+    const tbody =
+    document.querySelector(
+        "#tableStock tbody"
+    );
+
+    const filtre =
+    document.getElementById(
+        "search"
+    ).value;
+
+    const liste =
+    filtrerStock(
+        filtre
+    );
+
+    let html = "";
+
+    liste.forEach(item => {
+
+        const vraiIndex =
+        stock.indexOf(item);
+
+        const fin =
+        stockFin(item);
+
+        const classe =
+        fin < item.minimum
+        ? "alert"
+        : "";
+
+        html += `
+
+<tr class="${classe}">
+
+<td>${item.codial || ""}</td>
+
+<td>${item.fournisseur || ""}</td>
+
+<td>${item.machine || ""}</td>
+
+<td>${item.marque || ""}</td>
+
+<td>${item.materiel || ""}</td>
+
+<td>${item.reference || ""}</td>
+
+<td>${item.denomination || ""}</td>
+
+<td>${item.debut || 0}</td>
+
+<td>${item.entrees || 0}</td>
+
+<td>${item.sorties || 0}</td>
+
+<td>${fin}</td>
+
+<td>${item.minimum || 0}</td>
+
+<td>
+
+<button
+class="btn-small btn-entree"
+onclick="ajouterEntree(${vraiIndex})">
+
+Entrée +
+
+</button>
+
+</td>
+
+<td>
+
+<button
+class="btn-small btn-sortie"
+onclick="ajouterSortie(${vraiIndex})">
+
+Sortie -
+
+</button>
+
+</td>
+
+<td>
+
+<button
+class="btn-small btn-modifier"
+onclick="modifierArticle(${vraiIndex})">
+
+Modifier
+
+</button>
+
+</td>
+
+<td>
+
+<button
+class="btn-small btn-delete"
+onclick="supprimer(${vraiIndex})">
+
+❌
+
+</button>
+
+</td>
+
+</tr>
+
+`;
+
+    });
+
+    tbody.innerHTML =
+    html;
+
+}
+
+/* ===================================
+   FORMULAIRE
+=================================== */
+
+function remplirForm(item){
+
+    const form =
+    document.getElementById(
+        "formStock"
+    );
+
+    form.elements["codial"].value =
+    item.codial || "";
+
+    form.elements["fournisseur"].value =
+    item.fournisseur || "";
+
+    form.elements["machine"].value =
+    item.machine || "";
+
+    form.elements["marque"].value =
+    item.marque || "";
+
+    form.elements["materiel"].value =
+    item.materiel || "";
+
+    form.elements["reference"].value =
+    item.reference || "";
+
+    form.elements["denomination"].value =
+    item.denomination || "";
+
+    form.elements["debut"].value =
+    item.debut || 0;
+
+    form.elements["entrees"].value =
+    item.entrees || 0;
+
+    form.elements["sorties"].value =
+    item.sorties || 0;
+
+    form.elements["minimum"].value =
+    item.minimum || 0;
+
+}
+
+function resetForm(){
+form.elements["debut"].value = 0;
+form.elements["entrees"].value = 0;
+form.elements["sorties"].value = 0;
+form.elements["minimum"].value = 0;
+    document
+    .getElementById(
+        "formStock"
+    )
+    .reset();
+
+    document
+    .getElementById(
+        "formStock"
+    )
+    .style.display =
+    "none";
+
+    indexEnEdition =
+    null;
+
+}
+
+/* ===================================
+   SUPPRESSION
+=================================== */
+
+function supprimer(index){
+
+    if(
+        !confirm(
+            "Supprimer cet article ?"
+        )
+    ){
+
+        return;
+
+    }
+
+    stock.splice(
+        index,
+        1
+    );
 
     sauvegarder();
-    autoExportCSV();
+
     afficher();
-    resetForm();
-};
 
-/* --- ARTICLES À COMMANDER --- */
-document.getElementById("btnOrder").onclick = () => {
-    const articles = stock.filter(a => stockFin(a) < a.minimum);
+}
 
-    if (articles.length === 0) {
-        alert("Aucun article à commander.");
+/* ===================================
+   ENTREE
+=================================== */
+
+function ajouterEntree(index){
+
+    const q =
+    Number(
+        prompt(
+            "Quantité entrée :"
+        )
+    );
+
+    if(q > 0){
+
+        stock[index].entrees = Number(stock[index].entrees || 0) + q;
+
+        sauvegarder();
+
+        afficher();
+    }
+
+}
+
+/* ===================================
+   SORTIE
+=================================== */
+
+function ajouterSortie(index){
+
+    const q =
+    Number(
+        prompt(
+            "Quantité sortie :"
+        )
+    );
+
+    if(q > 0){
+
+        stock[index].sorties += Number(stock[index].sorties || 0) + q;
+
+        sauvegarder();
+
+        afficher();
+
+    }
+
+}
+
+/* ===================================
+   MODIFICATION
+=================================== */
+
+function modifierArticle(index){
+
+    if(
+        index < 0 ||
+        index >= stock.length
+    ){
+
+        alert(
+            "Article introuvable."
+        );
+
         return;
     }
 
-    let message = "📦 ARTICLES À COMMANDER :\n\n";
+    indexEnEdition =
+    index;
 
-    articles.forEach(a => {
-        const qte = prompt(
-            `Quantité à commander pour ${a.reference} - ${a.denomination} :`,
-            a.qteCommande ? String(a.qteCommande) : "1"
+    remplirForm(
+        stock[index]
+    );
+
+    document
+    .getElementById(
+        "formStock"
+    )
+    .style.display =
+    "block";
+
+    document
+    .getElementById(
+        "formTitle"
+    )
+    .textContent =
+    "Modifier l'article";
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
+
+}
+
+/* ===================================
+   AJOUT ARTICLE
+=================================== */
+
+document
+.getElementById(
+    "btnAdd"
+)
+.onclick = () => {
+
+    indexEnEdition =
+    null;
+
+    document
+    .getElementById(
+        "formTitle"
+    )
+    .textContent =
+    "Nouvel article";
+
+    document
+    .getElementById(
+        "formStock"
+    )
+    .reset();
+
+    document
+    .getElementById(
+        "formStock"
+    )
+    .style.display =
+    "block";
+
+};
+
+/* ===================================
+   ENREGISTREMENT
+=================================== */
+
+document
+.getElementById(
+    "btnSave"
+)
+.onclick = () => {
+
+    const form =
+
+    document.getElementById(
+        "formStock"
+    );
+
+    const data =
+
+    Object.fromEntries(
+        new FormData(form).entries()
+    );
+
+    const item =
+
+    creerIndexRecherche({
+
+        codial:
+        data.codial || "",
+
+        fournisseur:
+        data.fournisseur || "",
+
+        machine:
+        data.machine || "",
+
+        marque:
+        data.marque || "",
+
+        materiel:
+        data.materiel || "",
+
+        reference:
+        data.reference || "",
+
+        denomination:
+        data.denomination || "",
+
+        debut:
+        Number(data.debut) || 0,
+
+        entrees:
+        Number(data.entrees) || 0,
+
+        sorties:
+        Number(data.sorties) || 0,
+
+        minimum:
+        Number(data.minimum) || 0
+
+    });
+
+    if(
+        indexEnEdition === null
+    ){
+
+        stock.push(item);
+
+    }
+    else{
+
+        stock[indexEnEdition] =
+        item;
+
+    }
+
+    sauvegarder();
+
+    afficher();
+
+    resetForm();
+
+};
+
+/* ===================================
+   RECHERCHE
+=================================== */
+
+let timerRecherche;
+
+document
+.getElementById(
+    "search"
+)
+.addEventListener(
+    "input",
+    () => {
+
+        clearTimeout(
+            timerRecherche
         );
 
-        const val = Number(qte);
-        a.qteCommande = val > 0 ? val : 0;
+        timerRecherche =
+        setTimeout(
+            afficher,
+            250
+        );
 
-        message += `${a.reference} | ${a.denomination} | À commander : ${a.qteCommande}\n`;
+    }
+);
+
+/* ===================================
+   SAUVEGARDE JSON
+=================================== */
+
+document
+.getElementById(
+    "btnBackup"
+)
+.onclick =
+sauvegardeFichier;
+
+/* ===================================
+   RESTAURATION JSON
+=================================== */
+
+document
+.getElementById(
+    "btnRestore"
+)
+.onclick = () => {
+
+    document
+    .getElementById(
+        "jsonBackup"
+    )
+    .click();
+
+};
+
+document
+.getElementById(
+    "jsonBackup"
+)
+.addEventListener(
+"change",
+function(){
+
+    const file =
+    this.files[0];
+
+    if(!file) return;
+
+    const reader =
+    new FileReader();
+
+    reader.onload =
+    function(e){
+
+        try{
+
+            const json =
+
+            JSON.parse(
+                e.target.result
+            );
+
+            stock =
+            (json.stock || [])
+            .map(
+                creerIndexRecherche
+            );
+
+            sauvegarder();
+
+            afficher();
+
+            alert(
+                "Sauvegarde restaurée."
+            );
+
+        }
+        catch(err){
+
+            alert(
+                "Fichier invalide."
+            );
+
+        }
+
+    };
+
+    reader.readAsText(
+        file,
+        "UTF-8"
+    );
+
+});
+
+/* ===================================
+   IMPORT
+=================================== */
+
+document
+.getElementById(
+    "btnImport"
+)
+.onclick = () => {
+
+    document
+    .getElementById(
+        "fileInput"
+    )
+    .click();
+
+};
+
+/* ===================================
+   EXPORT CSV
+=================================== */
+
+document
+.getElementById(
+    "btnExportCSV"
+)
+.onclick = () => {
+
+    let csv =
+
+`Reference codial;Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum
+`;
+
+    stock.forEach(a => {
+
+        csv +=
+
+`${a.codial};${a.fournisseur};${a.machine};${a.marque};${a.materiel};${a.reference};${a.denomination};${a.debut};${a.entrees};${a.sorties};${stockFin(a)};${a.minimum}
+`;
+
+    });
+
+    const blob =
+    new Blob(
+        [csv],
+        {
+            type:
+            "text/csv"
+        }
+    );
+
+    const url =
+    URL.createObjectURL(
+        blob
+    );
+
+    const lien =
+    document.createElement(
+        "a"
+    );
+
+    lien.href = url;
+
+    lien.download =
+    "stock_fes_fcm.csv";
+
+    lien.click();
+
+};
+/* ===================================
+   EXPORT CSV +
+=================================== */
+document
+.getElementById("btnExportCSVPositif")
+.onclick = () => {
+
+    let csv =
+`Reference codial;Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum
+`;
+
+    stock
+    .filter(a => stockFin(a) > 0)
+    .forEach(a => {
+
+        csv +=
+`${a.codial};${a.fournisseur};${a.machine};${a.marque};${a.materiel};${a.reference};${a.denomination};${a.debut};${a.entrees};${a.sorties};${stockFin(a)};${a.minimum}
+`;
+
+    });
+
+    const blob = new Blob(
+        [csv],
+        { type:"text/csv;charset=utf-8;" }
+    );
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const lien =
+        document.createElement("a");
+
+    lien.href = url;
+    lien.download =
+        "stock_positif_fes_fcm.csv";
+
+    lien.click();
+};
+
+
+/* ===================================
+   MODELE CSV
+=================================== */
+document
+.getElementById("btnDownloadModel")
+.onclick = () => {
+
+    const modele =
+`Reference codial;Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum
+12345;Fournisseur Exemple;Tracteur;John Deere;Filtre;FD-001;Filtre hydraulique;10;0;0;10;2`;
+
+    const blob = new Blob(
+        [modele],
+        {
+            type: "text/csv;charset=utf-8;"
+        }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const lien = document.createElement("a");
+    lien.href = url;
+    lien.download = "modele_stock_fes_fcm.csv";
+    lien.click();
+
+    URL.revokeObjectURL(url);
+};
+
+/* ===================================
+   RESET
+=================================== */
+
+document
+.getElementById(
+    "btnReset"
+)
+.onclick = () => {
+
+    if(
+
+        confirm(
+            "Effacer toute la base ?"
+        )
+
+    ){
+
+        stock = [];
+
+        sauvegarder();
+
+        afficher();
+
+    }
+
+};
+
+/* ===================================
+   PLEIN ÉCRAN
+=================================== */
+
+document
+.getElementById(
+    "btnFullscreen"
+)
+.onclick = () => {
+
+    if(
+        !document.fullscreenElement
+    ){
+
+        document
+        .documentElement
+        .requestFullscreen();
+
+    }
+    else{
+
+        document
+        .exitFullscreen();
+
+    }
+
+};
+
+/* ===================================
+   AUTOSAVE
+=================================== */
+
+setInterval(
+
+    () => {
+
+        localStorage.setItem(
+
+            "stockAutoSave",
+
+            JSON.stringify({
+
+                date:
+                new Date()
+                .toISOString(),
+
+                data:
+                stock
+
+            })
+
+        );
+
+    },
+
+    300000
+
+);
+
+/* ===================================
+   CHARGEMENT XLSX
+=================================== */
+
+async function chargerXLSX(){
+
+    if(window.XLSX){
+        return;
+    }
+
+    await new Promise(resolve => {
+
+        const script =
+        document.createElement(
+            "script"
+        );
+
+        script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+
+        script.onload =
+        resolve;
+
+        document.head.appendChild(
+            script
+        );
+
+    });
+
+}
+/* ===================================
+   EXPORT EXCEL
+=================================== */
+
+document
+.getElementById(
+    "btnExportExcel"
+)
+.onclick = async () => {
+
+    await chargerXLSX();
+
+    const data =
+
+    stock.map(item => ({
+
+        "Reference codial":
+        item.codial || "",
+
+        "Fournisseur":
+        item.fournisseur || "",
+
+        "Machine":
+        item.machine || "",
+
+        "Marque":
+        item.marque || "",
+
+        "Materiel":
+        item.materiel || "",
+
+        "Reference":
+        item.reference || "",
+
+        "Denomination":
+        item.denomination || "",
+
+        "Debut":
+        item.debut || 0,
+
+        "Entrees":
+        item.entrees || 0,
+
+        "Sorties":
+        item.sorties || 0,
+
+        "StockFin":
+        stockFin(item),
+
+        "Minimum":
+        item.minimum || 0
+
+    }));
+
+    const ws =
+    XLSX.utils.json_to_sheet(
+        data
+    );
+
+    const wb =
+    XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        "Stock"
+    );
+
+    XLSX.writeFile(
+        wb,
+        "stock_fes_fcm.xlsx"
+    );
+
+};
+document
+.getElementById(
+    "fileInput"
+)
+.addEventListener(
+"change",
+async function(){
+
+    const file =
+    this.files[0];
+
+    if(!file) return;
+
+    if(
+        file.name
+        .toLowerCase()
+        .endsWith(".csv")
+    ){
+
+        importerCSV(file);
+
+    }
+    else if(
+
+        file.name
+        .toLowerCase()
+        .endsWith(".xlsx")
+
+        ||
+
+        file.name
+        .toLowerCase()
+        .endsWith(".xls")
+
+    ){
+
+        await chargerXLSX();
+
+        importerExcel(file);
+
+    }
+
+});
+/* ===================================
+   EXPORT EXCEL +
+=================================== */
+
+document
+.getElementById("btnExportExcelPositif")
+.onclick = async () => {
+
+    await chargerXLSX();
+
+    const data = stock
+    .filter(item =>
+        stockFin(item) > 0
+    )
+    .map(item => ({
+
+        "Reference codial":
+            item.codial || "",
+
+        "Fournisseur":
+            item.fournisseur || "",
+
+        "Machine":
+            item.machine || "",
+
+        "Marque":
+            item.marque || "",
+
+        "Materiel":
+            item.materiel || "",
+
+        "Reference":
+            item.reference || "",
+
+        "Denomination":
+            item.denomination || "",
+
+        "Debut":
+            item.debut || 0,
+
+        "Entrees":
+            item.entrees || 0,
+
+        "Sorties":
+            item.sorties || 0,
+
+        "StockFin":
+            stockFin(item),
+
+        "Minimum":
+            item.minimum || 0
+
+    }));
+
+    const ws =
+        XLSX.utils.json_to_sheet(data);
+
+    const wb =
+        XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        "Stock Positif"
+    );
+
+    XLSX.writeFile(
+        wb,
+        "stock_positif_fes_fcm.xlsx"
+    );
+
+};
+
+
+/* ===================================
+   ARTICLES À COMMANDER
+=================================== */
+
+document
+.getElementById(
+    "btnOrder"
+)
+.onclick = () => {
+
+    const articles =
+
+    stock.filter(
+        a =>
+        stockFin(a) <
+        a.minimum
+    );
+
+    if(
+        articles.length === 0
+    ){
+
+        alert(
+            "Aucun article à commander."
+        );
+
+        return;
+
+    }
+
+    let message =
+
+    "📦 ARTICLES À COMMANDER\n\n";
+
+    articles.forEach(a => {
+
+        const qte =
+
+        prompt(
+
+            `Quantité à commander pour ${a.reference}`,
+
+            a.qteCommande || 1
+
+        );
+
+        a.qteCommande =
+
+        Number(qte) || 0;
+
+        message +=
+
+`${a.reference}
+${a.denomination}
+
+Stock actuel : ${stockFin(a)}
+Stock minimum : ${a.minimum}
+
+À commander : ${a.qteCommande}
+
+-------------------------
+
+`;
+
     });
 
     sauvegarder();
+
     alert(message);
+
 };
 
-/* --- PDF ARTICLES À COMMANDER --- */
-document.getElementById("btnPDF").onclick = () => {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
+/* ===================================
+   CHARGEMENT PDF
+=================================== */
 
-    const articles = stock.filter(a => stockFin(a) < a.minimum);
+async function chargerPDF(){
 
-    if (articles.length === 0) {
-        alert("Aucun article à commander.");
+    if(window.jspdf){
         return;
+    }
+
+    await new Promise(resolve => {
+
+        const script =
+
+        document.createElement(
+            "script"
+        );
+
+        script.src =
+
+        "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+        script.onload =
+        resolve;
+
+        document.head.appendChild(
+            script
+        );
+
+    });
+
+}
+
+/* ===================================
+   EXPORT PDF
+=================================== */
+
+document
+.getElementById(
+    "btnPDF"
+)
+.onclick = async () => {
+
+    await chargerPDF();
+
+    const { jsPDF } =
+    window.jspdf;
+
+    const pdf =
+    new jsPDF();
+
+    const articles =
+
+    stock.filter(
+        a =>
+        stockFin(a) <
+        a.minimum
+    );
+
+    if(
+        articles.length === 0
+    ){
+
+        alert(
+            "Aucun article à commander."
+        );
+
+        return;
+
     }
 
     pdf.setFontSize(18);
-    pdf.text("Articles à commander — FES/FCM", 20, 20);
 
-    let y = 40;
-    pdf.setFontSize(12);
-
-    articles.forEach(a => {
-        if (y > 270) {
-            pdf.addPage();
-            y = 20;
-        }
-
-        const qte = a.qteCommande && a.qteCommande > 0 ? a.qteCommande : 0;
-
-        pdf.text(`${a.reference} - ${a.denomination}`, 20, y);
-        y += 6;
-
-        pdf.text(
-            `Stock : ${stockFin(a)} | Min : ${a.minimum} | À commander : ${qte}`,
-            20, y
-        );
-        y += 10
-    pdf.save("commande_fes_fcm.pdf");
-};
-
-/* --- EXPORT CSV MANUEL (bouton existant) --- */
-document.getElementById("btnExportCSV").onclick = () => {
-    let csv = "Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum\n";
-
-    stock.forEach(a => {
-        csv += `${a.fournisseur};${a.machine};${a.marque};${a.materiel};${a.reference};${a.denomination};${a.debut};${a.entrees};${a.sorties};${stockFin(a)};${a.minimum}\n`;
-    });
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "stock_fes_fcm.csv";
-    a.click();
-};
-
-/* --- EXPORT EXCEL (NOUVEAU BOUTON) --- */
-document.getElementById("btnExportExcel").onclick = () => {
-    const ws = XLSX.utils.json_to_sheet(
-        stock.map(a => ({
-            Fournisseur: a.fournisseur,
-            Machine: a.machine,
-            Marque: a.marque,
-            Materiel: a.materiel,
-            Reference: a.reference,
-            Denomination: a.denomination,
-            Debut: a.debut,
-            Entrees: a.entrees,
-            Sorties: a.sorties,
-            StockFin: stockFin(a),
-            Minimum: a.minimum
-        }))
+    pdf.text(
+        "Articles à commander FES / FCM",
+        20,
+        20
     );
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Stock");
+    let y = 40;
 
-    XLSX.writeFile(wb, "stock_fes_fcm.xlsx");
-};
+    articles.forEach(a => {
 
-/* --- EXPORT PDF STOCK COMPLET (NOUVEAU BOUTON) --- */
-document.getElementById("btnExportPDF").onclick = () => {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
+        if(y > 260){
 
-    pdf.setFontSize(16);
-    pdf.text("Stock FES/FCM — Export complet", 20, 20);
-
-    let y = 35;
-    pdf.setFontSize(10);
-
-    stock.forEach(a => {
-        if (y > 270) {
             pdf.addPage();
+
             y = 20;
+
         }
 
+        pdf.setFontSize(12);
+
         pdf.text(
-            `${a.reference} | ${a.denomination} | Stock: ${stockFin(a)} | Min: ${a.minimum}`,
+
+            `${a.reference}`,
+
             20,
+
             y
+
         );
-        y += 6;
+
+        y += 8;
+
+        pdf.text(
+
+            `${a.denomination}`,
+
+            20,
+
+            y
+
+        );
+
+        y += 8;
+
+        pdf.text(
+
+            `Stock : ${stockFin(a)} / Mini : ${a.minimum}`,
+
+            20,
+
+            y
+
+        );
+
+        y += 8;
+
+        pdf.text(
+
+            `Commande : ${a.qteCommande || 0}`,
+
+            20,
+
+            y
+
+        );
+
+        y += 15;
+
     });
 
-    pdf.save("stock_fes_fcm_stock_complet.pdf");
+    pdf.save(
+        "commande_fes_fcm.pdf"
+    );
+
 };
 
-/* --- IMPORT CSV / EXCEL --- */
-document.getElementById("btnImport").onclick = () => {
-    document.getElementById("fileInput").click();
-};
 
-document.getElementById("fileInput").addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
 
-    if (file.name.endsWith(".csv")) {
-        importerCSV(file);
-    } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-        importerExcel(file);
-    } else {
-        alert("Format non supporté.");
-    }
-});
+/* ===================================
+   IMPORT EXCEL
+=================================== */
 
-function importerCSV(file) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const lignes = e.target.result.split("\n").map(l => l.trim()).filter(l => l);
+function importerExcel(file){
 
-        // On saute la première ligne (en-têtes)
-        lignes.slice(1).forEach(ligne => {
-            const cols = ligne.split(";");
+    const reader =
+    new FileReader();
 
-            if (cols.length < 11) return;
+    reader.onload =
+    function(e){
 
-            stock.push({
-                fournisseur: cols[0],
-                machine: cols[1],
-                marque: cols[2],
-                materiel: cols[3],
-                reference: cols[4],
-                denomination: cols[5],
-                debut: Number(cols[6]),
-                entrees: Number(cols[7]),
-                sorties: Number(cols[8]),
-                minimum: Number(cols[10])
-            });
-        });
+        const data =
+        new Uint8Array(
+            e.target.result
+        );
 
-        sauvegarder();
-        autoExportCSV();
-        afficher();
-        alert("Import CSV terminé !");
-    };
-    reader.readAsText(file, "UTF-8");
-}
+        const workbook =
 
-function importerExcel(file) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet);
+        XLSX.read(
+            data,
+            {
+                type:"array"
+            }
+        );
+
+        const sheet =
+
+        workbook.Sheets[
+            workbook.SheetNames[0]
+        ];
+
+        const json =
+
+        XLSX.utils.sheet_to_json(
+            sheet,
+            {
+                defval:""
+            }
+        );
+
+        stock = [];
 
         json.forEach(row => {
-            stock.push({
-                fournisseur: row.Fournisseur || "",
-                machine: row.Machine || "",
-                marque: row.Marque || "",
-                materiel: row.Materiel || "",
-                reference: row.Reference || "",
-                denomination: row.Denomination || "",
-                debut: Number(row.Debut || 0),
-                entrees: Number(row.Entrees || 0),
-                sorties: Number(row.Sorties || 0),
-                minimum: Number(row.Minimum || 0)
-            });
+
+            stock.push(
+
+                creerIndexRecherche({
+
+                    codial:
+
+                    row[
+                    "Reference codial"
+                    ] || "",
+
+                    fournisseur:
+
+                    row[
+                    "Fournisseur"
+                    ] || "",
+
+                    machine:
+
+                    row[
+                    "Machine"
+                    ] || "",
+
+                    marque:
+
+                    row[
+                    "Marque"
+                    ] || "",
+
+                    materiel:
+
+                    row[
+                    "Materiel"
+                    ] || "",
+
+                    reference:
+
+                    row[
+                    "Reference"
+                    ] || "",
+
+                    denomination:
+
+                    row[
+                    "Denomination"
+                    ] || "",
+
+                    debut:
+
+                    Number(
+                        row["Debut"]
+                    ) || 0,
+
+                    entrees:
+
+                    Number(
+                        row["Entrees"]
+                    ) || 0,
+
+                    sorties:
+
+                    Number(
+                        row["Sorties"]
+                    ) || 0,
+
+                    minimum:
+
+                    Number(
+                        row["Minimum"]
+                    ) || 0
+
+                })
+
+            );
+
         });
 
         sauvegarder();
-        autoExportCSV();
+
         afficher();
-        alert("Import Excel terminé !");
+
+        alert(
+            stock.length +
+            " article(s) importé(s)."
+        );
+
     };
-    reader.readAsArrayBuffer(file);
+
+    reader.readAsArrayBuffer(
+        file
+    );
+
 }
 
-/* --- TÉLÉCHARGER MODÈLE CSV --- */
-document.getElementById("btnDownloadModel").onclick = () => {
-    const modele = "Fournisseur;Machine;Marque;Materiel;Reference;Denomination;Debut;Entrees;Sorties;StockFin;Minimum\n";
-    const blob = new Blob([modele], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+function importerCSV(file){
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "modele_stock_fes_fcm.csv";
-    a.click();
-};
+    const reader =
+    new FileReader();
 
-/* --- RESET BASE --- */
-document.getElementById("btnReset").onclick = () => {
-    if (confirm("Effacer toute la base ?")) {
+    reader.onload =
+    function(e){
+
+        const lignes =
+
+        e.target.result
+
+        .split(/\r?\n/)
+
+        .map(l => l.trim())
+
+        .filter(l => l !== "");
+
+        if(
+            lignes.length < 2
+        ){
+
+            alert(
+                "Fichier vide."
+            );
+
+            return;
+
+        }
+
         stock = [];
+
+        lignes
+        .slice(1)
+        .forEach(ligne => {
+
+            const cols =
+            ligne.split(";");
+
+            stock.push(
+
+                creerIndexRecherche({
+
+                    codial:
+                    cols[0] || "",
+
+                    fournisseur:
+                    cols[1] || "",
+
+                    machine:
+                    cols[2] || "",
+
+                    marque:
+                    cols[3] || "",
+
+                    materiel:
+                    cols[4] || "",
+
+                    reference:
+                    cols[5] || "",
+
+                    denomination:
+                    cols[6] || "",
+
+                    debut:
+                    Number(cols[7]) || 0,
+
+                    entrees:
+                    Number(cols[8]) || 0,
+
+                    sorties:
+                    Number(cols[9]) || 0,
+
+                    minimum:
+                    Number(cols[11]?? 0)
+
+                })
+
+            );
+
+        });
+
         sauvegarder();
-        autoExportCSV();
+
         afficher();
-    }
-};
 
-/* --- RECHERCHE --- */
-document.getElementById("search").addEventListener("input", afficher);
+        alert(
+            stock.length +
+            " article(s) importé(s)."
+        );
 
-/* --- PLEIN ÉCRAN --- */
-document.getElementById("btnFullscreen").onclick = () => {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
-};
+    };
 
-/* --- INIT --- */
+    reader.readAsText(
+        file,
+        "UTF-8"
+    );
+
+}
+
+/* ===================================
+   INITIALISATION
+=================================== */
+
 appliqueModeSombreAuto();
-setInterval(appliqueModeSombreAuto, 300000);
+
+setInterval(
+
+    appliqueModeSombreAuto,
+
+    300000
+
+);
+
 afficher();
+
 </script>
 
-<footer style="margin-top:20px; text-align:center; opacity:0.7;">
-    Gestion de stock FES/FCM – créé par FES/FCM
+<footer>
+
+
+<br>
+
+© 2026 Robert AURAY
+Gestion de Stock Véhicule FES / FCM
+Version 1.0
+Tous droits réservés
+
 </footer>
 
 </body>
+
 </html>
+
