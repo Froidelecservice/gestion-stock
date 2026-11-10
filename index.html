@@ -313,7 +313,10 @@ th{
 
     background:var(--alert);
 }
-
+.commande-passee{
+    background-color:#81c784 !important;
+    font-weight:bold;
+}
 .btn-small{
 
     width:100%;
@@ -881,10 +884,19 @@ function afficher(){
         const fin =
         stockFin(item);
 
-        const classe =
-        fin < item.minimum
-        ? "alert"
-        : "";
+let classe = "";
+
+if(
+    item.qteCommande &&
+    item.qteCommande > 0
+){
+    classe = "commande-passee";
+}
+else if(
+    fin < item.minimum
+){
+    classe = "alert";
+}
 
         html += `
 
@@ -1084,15 +1096,25 @@ function ajouterEntree(index){
 
     if(q > 0){
 
-        stock[index].entrees = Number(stock[index].entrees || 0) + q;
+        stock[index].entrees =
+        Number(
+            stock[index].entrees || 0
+        ) + q;
+
+        const nouveauStock =
+        stockFin(stock[index]);
+
+        if(
+            nouveauStock >=
+            stock[index].minimum
+        ){
+            stock[index].qteCommande = 0;
+        }
 
         sauvegarder();
-
         afficher();
     }
-
 }
-
 /* ===================================
    SORTIE
 =================================== */
@@ -1847,73 +1869,135 @@ document
 =================================== */
 
 document
-.getElementById(
-    "btnOrder"
-)
+.getElementById("btnOrder")
 .onclick = () => {
 
     const articles =
-
     stock.filter(
-        a =>
-        stockFin(a) <
-        a.minimum
+        a => stockFin(a) < a.minimum
     );
 
-    if(
-        articles.length === 0
-    ){
+    if(articles.length === 0){
 
         alert(
             "Aucun article à commander."
         );
 
         return;
-
     }
 
-    let message =
+    let html = `
 
-    "📦 ARTICLES À COMMANDER\n\n";
+    <div id="commandePopup"
+    style="
+        position:fixed;
+        top:5%;
+        left:5%;
+        width:90%;
+        max-height:85%;
+        overflow:auto;
+        background:white;
+        border:2px solid #005A9C;
+        border-radius:10px;
+        padding:20px;
+        z-index:99999;
+        box-shadow:0 0 20px rgba(0,0,0,.3);
+    ">
 
-    articles.forEach(a => {
+    <h2>
+    📦 Articles à commander
+    </h2>
 
-        const qte =
+    <table
+    style="
+        width:100%;
+        border-collapse:collapse;
+    ">
 
-        prompt(
+    <tr>
+        <th>Référence</th>
+        <th>Dénomination</th>
+        <th>Stock actuel</th>
+        <th>Stock mini</th>
+        <th>Qté proposée</th>
+    </tr>
+    `;
 
-            `Quantité à commander pour ${a.reference}`,
+articles.forEach((a,index) => {
 
-            a.qteCommande || 1
+    const stockActuel = stockFin(a);
 
-        );
+    const qteProposee =
+    a.qteCommande ??
+    Math.max(
+        a.minimum - stockActuel,
+        0
+    );
 
-        a.qteCommande =
+    html += `
+    <tr>
 
-        Number(qte) || 0;
+    <td>${a.reference}</td>
 
-        message +=
+    <td>${a.denomination}</td>
 
-`${a.reference}
-${a.denomination}
+    <td>${stockActuel}</td>
 
-Stock actuel : ${stockFin(a)}
-Stock minimum : ${a.minimum}
+    <td>${a.minimum}</td>
 
-À commander : ${a.qteCommande}
+    <td>
+        <input
+        type="number"
+        min="0"
+        value="${qteProposee}"
+        id="qteCommande${index}"
+        style="width:80px">
+    </td>
 
--------------------------
+    </tr>
+    `;
+});
 
-`;
 
-    });
+    html += `
 
-    sauvegarder();
+    </table>
 
-    alert(message);
+    <br>
+
+  <button
+onclick="fermerCommandePopup()"
+style="
+background:#d32f2f;
+color:white;
+font-weight:bold;
+padding:12px 25px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+">
+❌ Fermer
+</button>
+
+    </div>
+    `;
+
+    const ancienne =
+    document.getElementById(
+        "commandePopup"
+    );
+
+    if(ancienne){
+        ancienne.remove();
+    }
+
+    document.body
+    .insertAdjacentHTML(
+        "beforeend",
+        html
+    );
 
 };
-
 /* ===================================
    CHARGEMENT PDF
 =================================== */
@@ -1952,11 +2036,16 @@ async function chargerPDF(){
 =================================== */
 
 document
-.getElementById(
-    "btnPDF"
-)
+.getElementById("btnPDF")
 .onclick = async () => {
+    const popup =
+    document.getElementById(
+        "commandePopup"
+    );
 
+    if(popup){
+        fermerCommandePopup();
+    }
     await chargerPDF();
 
     const { jsPDF } =
@@ -2309,6 +2398,40 @@ function importerCSV(file){
 
 appliqueModeSombreAuto();
 
+function fermerCommandePopup(){
+
+    const articles =
+    stock.filter(
+        a => stockFin(a) < a.minimum
+    );
+
+    articles.forEach((a,index)=>{
+
+        const champ =
+        document.getElementById(
+            `qteCommande${index}`
+        );
+
+        if(champ){
+
+            a.qteCommande =
+            Number(champ.value) || 0;
+
+        }
+
+    });
+
+    sauvegarder();
+
+    afficher(); // <-- AJOUTER CETTE LIGNE
+
+    document
+    .getElementById(
+        "commandePopup"
+    )
+    ?.remove();
+
+}
 setInterval(
 
     appliqueModeSombreAuto,
