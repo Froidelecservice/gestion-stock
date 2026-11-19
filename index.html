@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Stocks - Chef de Bureau V 1.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background: #f4f6f9;
+        }
+        header {
+            background: #004A99;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .container {
+            display: flex;
+            min-height: calc(100vh - 58px);
+        }
+        .menu {
+            width: 280px;
+            background: #003366;
+            padding: 20px;
+        }
+        .menu button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            text-align: left;
+            transition: background 0.2s;
+        }
+        .menu button:hover {
+            background: #0056b3;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+        .section {
+            display: none;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 950px;
+        }
+        .section.active {
+            display: block;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #003366;
+            border-bottom: 2px solid #f4f6f9;
+            padding-bottom: 10px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        label {
+            font-weight: bold;
+            color: #333;
+        }
+        .btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #218838;
+        }
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th {
+            background: #004A99;
+            color: white;
+            text-align: left;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .quit {
+            background: #dc3545 !important;
+            margin-top: 20px;
+            text-align: center !important;
+        }
+        .quit:hover {
+            background: #c82333 !important;
+        }
+        .info-note {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    GESTION DES STOCKS - CHEF DE BUREAU
+</header>
+
+<div class="container">
+    <div class="menu">
+        <button onclick="showSection('stock')">Attribution / Modifier Stock</button>
+        <button onclick="showSection('attribution')">Création Véhicule</button>
+        <button onclick="showSection('vehicule')">Changement Véhicule</button>
+        <button onclick="showSection('technicien')">Changement Technicien</button>
+        <button onclick="showSection('consultation')">Consultation Véhicules</button>
+        <button onclick="showSection('recherche')">Consultation / Recherche Stock</button>
+        <button onclick="window.location.href='index.html'" class="quit">Retour Accueil</button>
+    </div>
+
+    <div class="content">
+        <!-- Attribution / Modification Stock -->
+        <div id="stock" class="section active">
+            <h2>Attribuer ou modifier un article en stock</h2>
+            <p class="info-note">Si la référence existe déjà pour ce véhicule, la quantité et l'intitulé seront mis à jour.</p>
+            
+            <label for="selectVehiculeStock">Véhicule destinataire</label>
+            <select id="selectVehiculeStock">
+                <option value="">Chargement des véhicules...</option>
+            </select>
+
+            <label for="stockRef">Référence article</label>
+            <input id="stockRef" placeholder="Ex: REF-4502">
+
+            <label for="stockIntitule">Intitulé / Désignation</label>
+            <input id="stockIntitule" placeholder="Ex: Câble RJ45 5m">
+
+            <label for="stockQte">Quantité</label>
+            <input id="stockQte" type="number" min="0" placeholder="Ex: 10">
+
+            <button class="btn" onclick="enregistrerStock()">Valider le stock</button>
+        </div>
+
+        <!-- Création Véhicule -->
+        <div id="attribution" class="section">
+            <h2>Créer un véhicule</h2>
+            <label for="immat">Immatriculation</label>
+            <input id="immat" placeholder="Ex: AB-123-CD">
+            
+            <label for="nom">Nom du technicien</label>
+            <input id="nom" placeholder="Ex: DUPONT">
+            
+            <label for="prenom">Prénom du technicien</label>
+            <input id="prenom" placeholder="Ex: Jean">
+            
+            <button class="btn" onclick="creerVehicule()">Enregistrer</button>
+        </div>
+
+        <!-- Changement véhicule -->
+        <div id="vehicule" class="section">
+            <h2>Modifier l'immatriculation</h2>
+            <label for="selectVehiculeImmat">Sélectionner le véhicule actuel</label>
+            <select id="selectVehiculeImmat">
+                <option value="">Chargement des véhicules...</option>
+            </select>
+            
+            <label for="nouvelleImmat">Nouvelle immatriculation</label>
+            <input id="nouvelleImmat" placeholder="Ex: XY-987-ZZ">
+            
+            <button class="btn" onclick="modifierVehicule()">Modifier</button>
+        </div>
+
+        <!-- Changement technicien -->
+        <div id="technicien" class="section">
+            <h2>Modifier le technicien attribué</h2>
+            <label for="selectVehiculeTech">Sélectionner le véhicule</label>
+            <select id="selectVehiculeTech">
+                <option value="">Chargement des véhicules...</option>
+            </select>
+            
+            <label for="nouveauNom">Nouveau Nom</label>
+            <input id="nouveauNom" placeholder="Ex: MARTIN">
+            
+            <label for="nouveauPrenom">Nouveau Prénom</label>
+            <input id="nouveauPrenom" placeholder="Ex: Paul">
+            
+            <button class="btn" onclick="modifierTechnicien()">Modifier</button>
+        </div>
+
+        <!-- Consultation Véhicules -->
+        <div id="consultation" class="section">
+            <h2>Consultation des véhicules</h2>
+            <button class="btn" onclick="chargerVehicules()">Actualiser la liste</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Immatriculation</th>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="listeVehicules">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Recherche Stock -->
+        <div id="recherche" class="section">
+            <h2>Consultation et recherche de stock</h2>
+            <input id="texteRecherche" onkeyup="rechercherArticle()" placeholder="Filtrer par référence, intitulé ou immatriculation...">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Intitulé</th>
+                        <th>Quantité</th>
+                        <th>Véhicule</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="resultats">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script type="module">
+    import { initializeApp } from "https://gstatic.com";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "https://gstatic.com";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBEOR50lOpNHSzIPgm5PjJag2hloFMdXC0",
+        authDomain: "://firebaseapp.com",
+        projectId: "gestion-stock-v",
+        storageBucket: "gestion-stock-v.firebasestorage.app",
+        messagingSenderId: "654462305612",
+        appId: "1:654462305612:web:009b200ee8997bb6793be9",
+        measurementId: "G-LQWSPV92NB"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let cacheStocks = [];
+
+    window.showSection = function(id) {
+        document.querySelectorAll(".section").forEach(section => section.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        if (id === 'recherche') {
+            chargerStocks();
+        }
+    };
+
+    function creerCellule(texte) {
+        const td = document.createElement("td");
+        td.textContent = texte !== undefined && texte !== null ? texte : "";
+        return td;
+    }
+
+    window.creerVehicule = async function() {
+        const immat = document.getElementById("immat").value.trim().toUpperCase();
+        const nom = document.getElementById("nom").value.trim().toUpperCase();
+        const prenom = document.getElementById("prenom").value.trim();
+
+        if (!immat || !nom || !prenom) {
+            alert("Veuillez remplir tous les champs avant d'enregistrer.");
+            return;
+        }
+
+        try {
+            await addDoc(collection(db, "vehicules"), { immat, nom, prenom });
+            alert("Véhicule créé avec succès !");
+            document.getElementById("immat").value = "";
+            document.getElementById("nom").value = "";
+            document.getElementById("prenom").value = "";
+            await chargerVehicules();
+        } catch (error) {
+            console.error("Erreur création :", error);
+            alert("Erreur : " + error.message);
+        }
+    };
+
+    window.chargerVehicules = async function() {
+        const tbody = document.getElementById("listeVehicules");
+        const selects = [
+            document.getElementById("selectVehiculeImmat"),
+            document.getElementById("selectVehiculeTech"),
+            document.getElementById("selectVehiculeStock")
+        ];
+
+        tbody.innerHTML = "<tr><td colspan='4'>Chargement en cours...</td></tr>";
+
+        try {
+            const snapshot = await getDocs(collection(db, "vehicules"));
+            tbody.innerHTML = "";
+            
+            selects.forEach(sel => {
+                sel.innerHTML = '<option value="">-- Choisissez un véhicule --</option>';
+            });
+
+            if (snapshot.empty) {
+                tbody.innerHTML = "<tr><td colspan='4'>Aucun véhicule enregistré.</td></tr>";
+                return;
+            }
+
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                
+                const tr = document.createElement("tr");
+                tr.appendChild(creerCellule(data.immat));
+                tr.appendChild(creerCellule(data.nom));
+                tr.appendChild(creerCellule(data.prenom));
+
+                const tdAction = document.createElement("td");
+                const btnSuppr = document.createElement("button");
+                btnSuppr.textContent = "Supprimer";
+                btnSuppr.className = "btn-delete";
+                btnSuppr.onclick = () => supprimerVehicule(docSnap.id, data.immat);
+                tdAction.appendChild(btnSuppr);
+                tr.appendChild(tdAction);
+
+                tbody.appendChild(tr);
+
+                const labelOption = data.immat + " - " + data.nom + " " + data.prenom;
+                selects.forEach((sel, index) => {
+                    const opt = document.createElement("option");
+                    opt.value = (index === 2) ? data.immat : docSnap.id;
+                    opt.textContent = labelOption;
+                    sel.appendChild(opt);
+                });
+            });
+        } catch (error) {
+            console.error("Erreur de chargement :", error);
+            tbody.innerHTML = "<tr><td colspan='4' style='color:red;'>Erreur lors du chargement.</td></tr>";
+        }
+    };
+
+    window.supprimerVehicule = async function(id, immat) {
+        if (!confirm("Voulez-vous vraiment supprimer le véhicule " + immat + " ?")) {
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, "vehicules", id));
+            alert("Véhicule " + immat + " supprimé.");
+            await chargerVehicules();
+        } catch (error) {
+            console.error("Erreur suppression :", error);
+            alert("Erreur lors de la suppression : " + error.message);
+        }
+    };
+
+    window.modifierVehicule = async function() {
+        const id = document.getElementById("selectVehiculeImmat").value;
+        const nouvelleImmat = document.getElementById("nouvelleImmat").value.trim().toUpperCase();
+
+        if (!id || !nouvelleImmat) {
+            alert("Veuillez sélectionner un véhicule et saisir la nouvelle immatriculation.");
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, "vehicules", id), { immat: nouvelleImmat });
+            alert("Immatriculation modifiée avec succès !");
+            document.getElementById("nouvelleImmat").value = "";
+            await chargerVehicules();
+        } catch (error) {
+            console.error("Erreur modification :", error);
+            alert("Erreur : " + error.message);
+        }
+    };
+
+    window.modifierTechnicien = async function() {
+        const id = document.getElementById("selectVehiculeTech").value;
+        const nouveauNom = document.getElementById("nouveauNom").value.trim().toUpperCase();
+        const nouveauPrenom = document.getElementById("nouveauPrenom").value.trim();
+
+        if (!id || !nouveauNom || !nouveauPrenom) {
+            alert("Veuillez sélectionner un véhicule et remplir le nom et le prénom.");
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, "vehicules", id), {
+                nom: nouveauNom,
+                prenom: nouveauPrenom
+            });
+            alert("Technicien modifié avec succès !");
+            document.getElementById("nouveauNom").value = "";
+            document.getElementById("nouveauPrenom").value = "";
+            await chargerVehicules();
+        } catch (error) {
+            console.error("Erreur modification :", error);
+            alert("Erreur : " + error.message);
+        }
+    };
+    window.enregistrerStock = async function() {
+        const immat = document.getElementById("selectVehiculeStock").value;
+        const reference = document.getElementById("stockRef").value.trim().toUpperCase();
+        const intitule = document.getElementById("stockIntitule").value.trim();
+        const quantite = parseInt(document.getElementById("stockQte").value, 10);
+
+        if (!immat || !reference || !intitule || isNaN(quantite) || quantite < 0) {
+            alert("Veuillez remplir correctement tous les champs du stock.");
+            return;
+        }
+
+        try {
+            const q = query(
+                collection(db, "stocks"),
+                where("immat", "==", immat),
+                where("reference", "==", reference)
+            );
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const docExistant = querySnapshot.docs.at(0);
+                await updateDoc(doc(db, "stocks", docExistant.id), {
+                    intitule: intitule,
+                    quantite: quantite
+                });
+                alert("Stock mis à jour pour " + reference + " dans le véhicule " + immat + ".");
+            } else {
+                await addDoc(collection(db, "stocks"), {
+                    immat: immat,
+                    reference: reference,
+                    intitule: intitule,
+                    quantite: quantite
+                });
+                alert("Article " + reference + " ajouté au véhicule " + immat + ".");
+            }
+
+            document.getElementById("stockRef").value = "";
+            document.getElementById("stockIntitule").value = "";
+            document.getElementById("stockQte").value = "";
+            await chargerStocks();
+        } catch (error) {
+            console.error("Erreur stock :", error);
+            alert("Erreur lors de l'enregistrement du stock : " + error.message);
+        }
+    };
+
+    window.chargerStocks = async function() {
+        const tbody = document.getElementById("resultats");
+        tbody.innerHTML = "<tr><td colspan='5'>Chargement du stock...</td></tr>";
+
+        try {
+            const snapshot = await getDocs(collection(db, "stocks"));
+            cacheStocks = [];
+            snapshot.forEach(docSnap => {
+                cacheStocks.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            rechercherArticle();
+        } catch (error) {
+            console.error("Erreur chargement stock :", error);
+            tbody.innerHTML = "<tr><td colspan='5' style='color:red;'>Erreur lors du chargement du stock.</td></tr>";
+        }
+    };
+
+    window.rechercherArticle = function() {
+        const recherche = document.getElementById("texteRecherche").value.trim().toLowerCase();
+        const tbody = document.getElementById("resultats");
+        tbody.innerHTML = "";
+
+        const filtres = cacheStocks.filter(article => {
+            const ref = (article.reference || "").toLowerCase();
+            const intitule = (article.intitule || "").toLowerCase();
+            const immat = (article.immat || "").toLowerCase();
+            return ref.includes(recherche) || intitule.includes(recherche) || immat.includes(recherche);
+        });
+
+        if (filtres.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5'>Aucun article trouvé.</td></tr>";
+            return;
+        }
+
+        filtres.forEach(article => {
+            const tr = document.createElement("tr");
+            tr.appendChild(creerCellule(article.reference));
+            tr.appendChild(creerCellule(article.intitule));
+            tr.appendChild(creerCellule(article.quantite));
+            tr.appendChild(creerCellule(article.immat));
+
+            const tdAction = document.createElement("td");
+            const btnSuppr = document.createElement("button");
+            btnSuppr.textContent = "Retirer";
+            btnSuppr.className = "btn-delete";
+            btnSuppr.onclick = () => supprimerArticleStock(article.id, article.reference, article.immat);
+            tdAction.appendChild(btnSuppr);
+            tr.appendChild(tdAction);
+
+            tbody.appendChild(tr);
+        });
+    };
+
+    window.supprimerArticleStock = async function(id, ref, immat) {
+        if (!confirm("Retirer l'article " + ref + " du véhicule " + immat + " ?")) {
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, "stocks", id));
+            await chargerStocks();
+        } catch (error) {
+            console.error("Erreur suppression article :", error);
+            alert("Erreur : " + error.message);
+        }
+    };
+
+    chargerVehicules();
+    chargerStocks();
+</script>
+
+</body>
+</html>
